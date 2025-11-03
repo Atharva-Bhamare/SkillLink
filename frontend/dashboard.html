@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - SkillLink</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <i class="fas fa-link"></i>
+                    <span>SkillLink</span>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link active">My Dashboard</a>
+                <a href="jobs.html" class="nav-link">View Jobs</a>
+                <a href="employer.html" class="nav-link">Post Job</a>
+                <button id="connectWallet" class="btn-primary">
+                    <i class="fas fa-wallet"></i>
+                    Connect Wallet
+                </button>
+            </div>
+            <div class="mobile-menu-toggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="breadcrumb">
+                    <a href="index.html">Home</a>
+                    <i class="fas fa-chevron-right"></i>
+                    <span>My Dashboard</span>
+                </div>
+                <h1>My Posted Jobs</h1>
+                <p>Manage your job listings and view applications</p>
+            </div>
+
+            <div id="loadingDashboardJobs" class="loading-container" style="display: none;">
+                <div class="loading-animation">
+                    <div class="ethereum-spinner">
+                        <i class="fab fa-ethereum"></i>
+                    </div>
+                    <h3>Loading Your Jobs...</h3>
+                    <p>Connecting to your wallet and fetching data...</p>
+                </div>
+            </div>
+
+            <div id="userJobsContainer" class="jobs-container" style="display: none;">
+                </div>
+
+            <div id="dashboardEmptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <h3>You haven't posted any jobs</h3>
+                <p>Click "Post Job" in the navigation to create your first listing.</p>
+                <div class="empty-actions">
+                    <a href="employer.html" class="btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Post a Job
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="applicationsModal" class="modal">
+        <div class="modal-content applications-list-modal">
+            <span class="close" id="applicationsModalClose">&times;</span>
+            <div class="modal-header">
+                <i class="fas fa-users"></i>
+                <h3>Job Applications</h3>
+            </div>
+            <div class="modal-body" id="applicationsModalBody">
+                <h4 id="appModalJobTitle"></h4>
+                <div id="applicationsListContainer">
+                    </div>
+                <div id="noApplicationsState" style="display: none;">
+                    <p>There are no applications for this job yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingModal" class="modal">
+        <div class="modal-content loading-modal">
+            <div class="loading-animation">
+                <div class="ethereum-logo">
+                    <i class="fab fa-ethereum"></i>
+                </div>
+                <div class="loading-text">
+                    <h3>Broadcasting to Blockchain</h3>
+                    <p>Please confirm the transaction in your wallet...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="nav-logo">
+                        <i class="fas fa-link"></i>
+                        <span>SkillLink</span>
+                    </div>
+                    <p>The Future of Hiring</p>
+                </div>
+                <div class="footer-links">
+                    <a href="dashboard.html">My Dashboard</a>
+                    <a href="jobs.html">Find Jobs</a>
+                    <a href="employer.html">Post Jobs</a>
+                    <a href="#about">About</a>
+                    <a href="#contact">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 SkillLink. Built on Ethereum.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Wait for the DOM to load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show loading by default
+            document.getElementById('loadingDashboardJobs').style.display = 'flex';
+            
+            // Listen for the custom event from app.js
+            window.addEventListener('walletConnected', loadDashboardJobs);
+            
+            // If wallet is already connected (e.g., page refresh), load immediately
+            if (window.userAccount) {
+                loadDashboardJobs();
+            }
+
+            // Modal close events
+            document.getElementById('applicationsModalClose').addEventListener('click', closeApplicationsModal);
+            window.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('applicationsModal')) {
+                    closeApplicationsModal();
+                }
+            });
+        });
+
+        // Main function to load and render user's jobs
+        async function loadDashboardJobs() {
+            const container = document.getElementById('userJobsContainer');
+            const emptyState = document.getElementById('dashboardEmptyState');
+            const loadingState = document.getElementById('loadingDashboardJobs');
+
+            try {
+                // Ensure wallet is connected
+                if (!window.userAccount) {
+                    loadingState.querySelector('h3').textContent = 'Please connect your wallet';
+                    loadingState.querySelector('p').textContent = 'You must connect your wallet to view your dashboard.';
+                    return;
+                }
+
+                // 1. Ensure global jobsData is loaded
+                if (!window.jobsData || window.jobsData.length === 0) {
+                    await window.loadJobs();
+                }
+                const allJobs = window.jobsData;
+
+                // 2. Get the IDs of jobs posted by the current user
+                const employerJobIds = await window.getEmployerJobs(window.userAccount);
+
+                // 3. Filter the global jobs array
+                const employerJobs = allJobs.filter(job => 
+                    employerJobIds.some(id => id.toString() === job.id.toString())
+                ).sort((a, b) => Number(b.timestamp) - Number(a.timestamp)); // Sort by newest first
+
+                // 4. Render the jobs
+                renderUserJobs(employerJobs);
+
+            } catch (error) {
+                console.error('Error loading dashboard jobs:', error);
+                loadingState.style.display = 'none';
+                emptyState.style.display = 'flex';
+                emptyState.querySelector('h3').textContent = 'Error loading jobs';
+                emptyState.querySelector('p').textContent = 'Could not fetch your jobs from the blockchain. Please refresh and try again.';
+            }
+        }
+
+        // Function to render the filtered jobs
+        function renderUserJobs(jobs) {
+            const container = document.getElementById('userJobsContainer');
+            const emptyState = document.getElementById('dashboardEmptyState');
+            const loadingState = document.getElementById('loadingDashboardJobs');
+
+            loadingState.style.display = 'none';
+
+            if (jobs.length === 0) {
+                container.style.display = 'none';
+                emptyState.style.display = 'flex';
+                return;
+            }
+            
+            container.style.display = 'grid';
+            emptyState.style.display = 'none';
+
+            container.innerHTML = jobs.map(job => {
+                const statusText = job.isActive ? 'Active' : 'Closed';
+                const statusClass = job.isActive ? 'active' : 'closed';
+                const toggleBtnText = job.isActive ? 'Deactivate' : 'Activate';
+                const toggleBtnIcon = job.isActive ? 'fa-toggle-off' : 'fa-toggle-on';
+
+                return `
+                <div class="job-card" data-job-id="${job.id}">
+                    <div class="job-header">
+                        <div class="job-title-section">
+                            <h3 class="job-title">${job.title}</h3>
+                            <div class="job-meta">
+                                <span class="salary">
+                                    <i class="fas fa-dollar-sign"></i>
+                                    ${Number(job.salary).toLocaleString()}/year
+                                </span>
+                                <span class="posted-date">
+                                    <i class="fas fa-clock"></i>
+                                    ${window.formatDate(job.timestamp)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="job-status">
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="job-description">
+                        <p>${window.truncateText(job.description, 150)}</p>
+                    </div>
+                    
+                    <div class="job-footer">
+                        <div class="job-info">
+                            <span class="applicants">
+                                <i class="fas fa-users"></i>
+                                ${job.applicantCount} applicant${job.applicantCount !== '1' ? 's' : ''}
+                            </span>
+                        </div>
+                        <div class="job-actions">
+                            <button class="btn-outline" onclick="handleViewApplications(${job.id})">
+                                <i class="fas fa-eye"></i>
+                                View Applications
+                            </button>
+                            <button class="btn-primary" onclick="handleDeactivate(${job.id})">
+                                <i class="fas ${toggleBtnIcon}"></i>
+                                ${toggleBtnText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // --- Button Click Handlers ---
+        function handleDeactivate(jobId) {
+            if (!jobId) return;
+            if (confirm('Are you sure you want to toggle the status of this job?')) {
+                window.toggleJobStatus(jobId);
+            }
+        }
+
+        async function handleViewApplications(jobId) {
+            if (!jobId) return;
+
+            const modal = document.getElementById('applicationsModal');
+            const body = document.getElementById('applicationsModalBody');
+            const titleEl = document.getElementById('appModalJobTitle');
+            const listContainer = document.getElementById('applicationsListContainer');
+            const noAppsState = document.getElementById('noApplicationsState');
+
+            // Find job title
+            const job = window.jobsData.find(j => j.id == jobId);
+            titleEl.textContent = job ? job.title : 'Applications';
+            
+            listContainer.innerHTML = '<p>Loading applications...</p>';
+            noAppsState.style.display = 'none';
+            modal.style.display = 'block';
+
+            try {
+                const applications = await window.getJobApplications(jobId);
+                
+                if (applications.length === 0) {
+                    listContainer.innerHTML = '';
+                    noAppsState.style.display = 'block';
+                    return;
+                }
+
+                listContainer.innerHTML = applications.map(app => `
+                    <div class="application-card">
+                        <div class="applicant-info">
+                            <i class="fas fa-user-circle"></i>
+                            <span class="applicant-address" title="${app.applicant}">
+                                ${window.formatAddress(app.applicant)}
+                            </span>
+                        </div>
+                        <a href="${app.resumeLink}" class="btn-primary" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-link"></i>
+                            View Resume
+                        </a>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error fetching applications:', error);
+                listContainer.innerHTML = '<p style="color: var(--error-color);">Could not load applications. You may not be the owner of this job.</p>';
+            }
+        }
+
+        function closeApplicationsModal() {
+            document.getElementById('applicationsModal').style.display = 'none';
+        }
+
+    </script>
+</body>
+</html>
