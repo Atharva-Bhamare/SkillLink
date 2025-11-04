@@ -21,8 +21,8 @@
             </div>
             <div class="nav-menu">
                 <a href="index.html" class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link">My Dashboard</a>
                 <a href="jobs.html" class="nav-link active">View Jobs</a>
-                <!-- <a href="apply.html" class="nav-link">Apply Jobs</a> -->
                 <a href="employer.html" class="nav-link">Post Job</a>
                 <button id="connectWallet" class="btn-primary">
                     <i class="fas fa-wallet"></i>
@@ -170,6 +170,33 @@
         </div>
     </main>
 
+    <div id="jobDetailsModal" class="modal">
+        <div class="modal-content details-modal">
+            <span class="close" id="detailsModalClose">&times;</span>
+            <div class="modal-header">
+                <i class="fas fa-briefcase"></i>
+                <h3>Job Details</h3>
+            </div>
+            <div class="modal-body" id="detailsModalBody">
+                <h4 id="detailsJobTitle"></h4>
+                <div class="details-meta">
+                    <span class="salary" id="detailsJobSalary"></span>
+                    <span class="posted-date" id="detailsJobDate"></span>
+                    <span class="employer" id="detailsJobEmployer"></span>
+                </div>
+                <div class="details-description">
+                    <h5>Complete Description:</h5>
+                    <p id="detailsJobDescription"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="detailsModalCloseBtn">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Modal -->
     <div id="applicationModal" class="modal">
         <div class="modal-content application-modal">
@@ -225,6 +252,7 @@
                     <p>The Future of Hiring</p>
                 </div>
                 <div class="footer-links">
+                    <a href="dashboard.html">My Dashboard</a>
                     <a href="jobs.html">Find Jobs</a>
                     <a href="employer.html">Post Jobs</a>
                     <a href="#about">About</a>
@@ -261,14 +289,24 @@
             });
 
             // Application modal
-            const modal = document.getElementById('applicationModal');
-            const closeBtn = modal.querySelector('.close');
+            const appModal = document.getElementById('applicationModal');
+            const appCloseBtn = appModal.querySelector('.close');
+            appCloseBtn.addEventListener('click', closeApplicationModal);
             
-            closeBtn.addEventListener('click', closeApplicationModal);
-            
+            // Job Details Modal
+            const detailsModal = document.getElementById('jobDetailsModal');
+            const detailsCloseIcon = document.getElementById('detailsModalClose');
+            const detailsCloseBtn = document.getElementById('detailsModalCloseBtn');
+
+            detailsCloseIcon.addEventListener('click', closeJobDetailsModal);
+            detailsCloseBtn.addEventListener('click', closeJobDetailsModal);
+
             window.addEventListener('click', function(e) {
-                if (e.target === modal) {
+                if (e.target === appModal) {
                     closeApplicationModal();
+                }
+                if (e.target === detailsModal) {
+                    closeJobDetailsModal();
                 }
             });
 
@@ -410,11 +448,26 @@
             window.currentJobId = null;
         }
 
+        function closeJobDetailsModal() {
+            document.getElementById('jobDetailsModal').style.display = 'none';
+        }
+
         function viewJobDetails(jobId) {
-            const job = allJobs.find(j => j.id === jobId);
+            // Use == for loose equality to fix the string/number bug
+            const job = allJobs.find(j => j.id == jobId); 
             if (!job) return;
+
+            // Populate the new modal
+            document.getElementById('detailsJobTitle').textContent = job.title;
+            document.getElementById('detailsJobSalary').innerHTML = `<i class="fas fa-dollar-sign"></i> ${Number(job.salary).toLocaleString()}/year`;
+            document.getElementById('detailsJobDate').innerHTML = `<i class="fas fa-clock"></i> ${formatDate(job.timestamp)}`;
+            document.getElementById('detailsJobEmployer').innerHTML = `<i class="fas fa-building"></i> ${formatAddress(job.employer)}`;
             
-            alert(`Job Details:\n\nTitle: ${job.title}\nSalary: ${Number(job.salary).toLocaleString()}\nEmployer: ${job.employer}\nPosted: ${formatDate(job.timestamp)}\nApplications: ${job.applicantCount}\n\nDescription:\n${job.description}`);
+            // Use .textContent to safely render the description and respect newlines
+            document.getElementById('detailsJobDescription').textContent = job.description; 
+            
+            // Show the modal
+            document.getElementById('jobDetailsModal').style.display = 'block';
         }
 
         function clearFilters() {

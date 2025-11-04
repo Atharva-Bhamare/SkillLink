@@ -689,6 +689,7 @@ async function connectWallet() {
         });
 
         userAccount = accounts[0];
+        window.userAccount = userAccount; // Make it globally accessible
         
         // Initialize ethers
         web3Provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -716,6 +717,7 @@ async function connectWallet() {
         }
         
         console.log('Wallet connected successfully!');
+        window.dispatchEvent(new CustomEvent('walletConnected'));
         
     } catch (error) {
         console.error('Error connecting wallet:', error);
@@ -765,9 +767,11 @@ function handleAccountsChanged(accounts) {
     if (accounts.length === 0) {
         console.log('Please connect to MetaMask.');
         userAccount = null;
+        window.userAccount = null;
         updateWalletButton('Connect Wallet', false);
     } else if (accounts[0] !== userAccount) {
         userAccount = accounts[0];
+        window.userAccount = userAccount;
         updateWalletButton(`${userAccount.slice(0, 6)}...${userAccount.slice(-4)}`, true);
     }
 }
@@ -921,52 +925,49 @@ async function applyJob(jobId, resumeLink) {
     }
 }
 
-async function closeJob(jobId) {
+async function toggleJobStatus(jobId) {
     try {
         if (!contract) {
             throw new Error('Please connect your wallet first');
         }
-        
-        console.log('Closing job:', jobId);
-        
-        // Show loading modal
-        showLoadingModal('Closing Job', 'Please confirm the transaction in your wallet...');
-        
-        // Call smart contract function
-        const transaction = await contract.closeJob(jobId);
-        
+
+        console.log('Toggling status for job:', jobId);
+        showLoadingModal('Updating Job Status', 'Please confirm the transaction in your wallet...');
+
+        // Call the correct contract function
+        const transaction = await contract.toggleJobStatus(jobId);
+
         updateLoadingModal('Transaction Submitted', 'Waiting for blockchain confirmation...');
-        
-        // Wait for transaction confirmation
+
         const receipt = await transaction.wait();
-        
-        console.log('Job closed successfully!', receipt);
-        
+        console.log('Job status toggled successfully!', receipt);
+
         hideLoadingModal();
-        
-        // Show success notification
-        showNotification('Job closed successfully!', 'success');
-        
-        // Reload jobs
+        showNotification('Job status updated successfully!', 'success');
+
+        // Reload all jobs data to reflect the change
         await loadJobs();
-        
+
+        // Re-render the dashboard (if we are on that page)
+        if (typeof loadDashboardJobs === 'function') {
+            loadDashboardJobs();
+        }
+
         return receipt;
-        
+
     } catch (error) {
         hideLoadingModal();
-        console.error('Error closing job:', error);
-        
-        let errorMessage = 'Failed to close job. Please try again.';
+        console.error('Error toggling job status:', error);
+
+        let errorMessage = 'Failed to update job status. Please try again.';
         if (error.message.includes('user rejected')) {
             errorMessage = 'Transaction was rejected by user.';
-        } else if (error.message.includes('not the employer')) {
-            errorMessage = 'Only the job employer can close this job.';
-        } else if (error.message.includes('insufficient funds')) {
-            errorMessage = 'Insufficient funds for gas fees.';
+        } else if (error.message.includes('Only job employer')) {
+            errorMessage = 'Only the job employer can change this job.';
         } else if (error.reason) {
             errorMessage = error.reason;
         }
-        
+
         throw new Error(errorMessage);
     }
 }
@@ -1029,26 +1030,29 @@ async function updateStats() {
     try {
         if (!contract) return;
         
-        const totalJobs = await contract.getTotalJobs();
+        // 1. Ensure jobsData is loaded (it's already loaded by connectWallet)
+        if (!window.jobsData) {
+            console.log('Jobs data not loaded, fetching...');
+            await loadJobs();
+        }
+
+        // 2. Get total applications from contract
         const totalApplications = await contract.getTotalApplications();
-        
-        // Update stats on landing page
+
+        // 3. Calculate active jobs from the loaded data (THE FIX)
+        const activeJobsCount = window.jobsData.filter(job => job.isActive).length;
+
+        // 4. Update stats on landing page
         const totalJobsElement = document.getElementById('totalJobs');
         const totalApplicationsElement = document.getElementById('totalApplications');
-        const activeJobsElement = document.getElementById('activeJobs');
         
         if (totalJobsElement) {
-            totalJobsElement.textContent = totalJobs.toString();
+            // Update with the correct active count
+            totalJobsElement.textContent = activeJobsCount.toString(); 
         }
         
         if (totalApplicationsElement) {
             totalApplicationsElement.textContent = totalApplications.toString();
-        }
-        
-        // Count active jobs from jobsData
-        if (activeJobsElement && jobsData) {
-            const activeCount = jobsData.filter(job => job.isActive).length;
-            activeJobsElement.textContent = activeCount.toString();
         }
         
     } catch (error) {
@@ -1849,7 +1853,7 @@ window.connectWallet = connectWallet;
 window.postJob = postJob;
 window.loadJobs = loadJobs;
 window.applyJob = applyJob;
-window.closeJob = closeJob;
+window.toggleJobStatus = toggleJobStatus;
 window.getJobApplications = getJobApplications;
 window.getEmployerJobs = getEmployerJobs;
 window.getApplicantJobs = getApplicantJobs;

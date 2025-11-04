@@ -1919,3 +1919,124 @@ h4 { font-size: 1.25rem; }
 * {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
+
+/* Job Details Modal Styles */
+.details-modal .modal-body {
+    padding-top: 1rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+#detailsJobTitle {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.details-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.details-meta .salary,
+.details-meta .posted-date,
+.details-meta .employer {
+    font-size: 1rem;
+}
+
+.details-description h5 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.details-description p {
+    color: var(--text-primary);
+    line-height: 1.6;
+    white-space: pre-wrap; /* This respects newlines in the description */
+}
+
+.modal-footer {
+    padding: 1rem 2rem;
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    justify-content: flex-end;
+}
+
+[data-theme="dark"] .details-description p {
+    color: var(--text-secondary);
+}
+
+/* Dashboard Application Modal */
+.applications-list-modal .modal-body {
+    padding-top: 1rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+#appModalJobTitle {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 1rem;
+}
+
+#applicationsListContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.application-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.applicant-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.applicant-info .fa-user-circle {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.applicant-address {
+    font-family: monospace;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.application-card .btn-primary {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+#noApplicationsState p {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem 0;
+}
+
+[data-theme="dark"] .application-card {
+    border-color: var(--border-color);
+}
+[data-theme="dark"] .applicant-address {
+    color: var(--text-secondary);
+}
