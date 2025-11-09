@@ -5,22 +5,25 @@ It leverages **Ethereum smart contracts**, **MetaMask wallet authentication**, a
 
 ## 📂 Project Structure
 ```
-SkillLink/
-├── .gitignore
-├── docs
+SkillLink-DApp/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml
+├── docs/
 │   ├── DEPLOYMENT.md
 │   └── README.md
-├── frontend
+├── frontend/
 │   ├── app.js
 │   ├── dashboard.html
 │   ├── employer.html
 │   ├── index.html
 │   ├── jobs.html
 │   └── style.css
-└── smart-contract
-├── SkillLink.sol
-├── contract-config.json
-└── deploy.js
+├── smart-contract/
+│   ├── SkillLink.sol
+│   ├── contract-config.json
+│   └── deploy.js
+└── .gitignore
 ```
 
 - **/docs** → Documentation and deployment guides  
