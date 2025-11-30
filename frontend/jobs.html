@@ -108,7 +108,7 @@
                         </select>
                     </div>
                     
-                    <button class="refresh-btn" onclick="loadJobs()" title="Refresh Jobs">
+                    <button class="refresh-btn" onclick="refreshAndClear()" title="Refresh Jobs">
                         <i class="fas fa-sync-alt"></i>
                         Refresh
                     </button>
@@ -635,6 +635,22 @@ function closeApplicationModal() {
             document.getElementById('sortBy').value = 'newest';
             filteredJobs = [...allJobs];
             sortJobs();
+        }
+
+        async function refreshAndClear() {
+            // 1. Clear the Search Input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = '';
+            
+            // 2. Reset the Dropdown Filters
+            const salaryFilter = document.getElementById('salaryFilter');
+            const sortBy = document.getElementById('sortBy');
+            
+            if (salaryFilter) salaryFilter.value = '';
+            if (sortBy) sortBy.value = 'newest';
+
+            // 3. Load Fresh Data from Blockchain
+            await loadJobs();
         }
 
         function formatDate(timestamp) {
